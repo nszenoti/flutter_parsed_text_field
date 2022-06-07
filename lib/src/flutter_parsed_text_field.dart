@@ -251,6 +251,10 @@ class FlutterParsedTextFieldState extends State<FlutterParsedTextField> {
   final LayerLink _layerLink = LayerLink();
   OverlayEntry? _suggestionOverlay;
 
+  String _triggerPattern = '';
+
+  //bool _ignore = false;
+
   /// Apply the selected [suggestion] from the [matcher] to the text field.
   /// This will replace the partial text with the suggestion.
   ///
@@ -261,14 +265,27 @@ class FlutterParsedTextFieldState extends State<FlutterParsedTextField> {
   }) {
     assert(matcher.indexOfMatch != null && matcher.lengthOfMatch != null);
 
-    final replacement = '${matcher.trigger}${matcher.displayProp(suggestion)} ';
-    _controller.text = _controller.value.text.replaceRange(
+    final tag = "${matcher.trigger}${matcher.displayProp(suggestion)}";
+    final replacement = '$tag ';
+    var newText = _controller.value.text.replaceRange(
       matcher.indexOfMatch!,
       matcher.indexOfMatch! + matcher.lengthOfMatch!,
       replacement,
     );
 
-    _controller.selection = TextSelection.fromPosition(TextPosition(offset: matcher.indexOfMatch! + replacement.length));
+    var newSel = TextSelection.fromPosition(
+        TextPosition(offset: matcher.indexOfMatch! + replacement.length));
+
+    // Register the Tag/Suggestion Picked
+    if (matcher.needToPickFirstSuggestion) {
+      _controller.addPickup(tag);
+    }
+
+    //_ignore = true;
+    _controller.value = _controller.value.copyWith(
+      text: newText,
+      selection: newSel,
+    );
 
     if (matcher.onSuggestionAdded != null) {
       matcher.onSuggestionAdded!(matcher.trigger, suggestion);
@@ -292,20 +309,41 @@ class FlutterParsedTextFieldState extends State<FlutterParsedTextField> {
 
           var globalOffset = renderBox.localToGlobal(Offset.zero);
           var size = renderBox.size;
-          var spaceBelow = MediaQuery.of(context).size.height - MediaQuery.of(context).viewInsets.bottom - globalOffset.dy - size.height - 16;
-          var spaceAbove = globalOffset.dy - MediaQuery.of(context).padding.top - kToolbarHeight - 16;
+          var spaceBelow = MediaQuery.of(context).size.height -
+              MediaQuery.of(context).viewInsets.bottom -
+              globalOffset.dy -
+              size.height -
+              16;
+          var spaceAbove = globalOffset.dy -
+              MediaQuery.of(context).padding.top -
+              kToolbarHeight -
+              16;
 
           return Positioned(
             width: size.width,
-            height: widget.suggestionPosition == SuggestionPosition.above ? spaceAbove : spaceBelow,
+            height: widget.suggestionPosition == SuggestionPosition.above
+                ? spaceAbove
+                : spaceBelow,
             child: CompositedTransformFollower(
               link: _layerLink,
-              followerAnchor: widget.suggestionPosition == SuggestionPosition.above ? Alignment.bottomCenter : Alignment.topCenter,
-              targetAnchor: widget.suggestionPosition == SuggestionPosition.above ? Alignment.topCenter : Alignment.bottomCenter,
+              followerAnchor:
+                  widget.suggestionPosition == SuggestionPosition.above
+                      ? Alignment.bottomCenter
+                      : Alignment.topCenter,
+              targetAnchor:
+                  widget.suggestionPosition == SuggestionPosition.above
+                      ? Alignment.topCenter
+                      : Alignment.bottomCenter,
               showWhenUnlinked: false,
-              offset: Offset(0, widget.suggestionPosition == SuggestionPosition.above ? -8 : 8),
+              offset: Offset(
+                  0,
+                  widget.suggestionPosition == SuggestionPosition.above
+                      ? -8
+                      : 8),
               child: Align(
-                alignment: widget.suggestionPosition == SuggestionPosition.above ? Alignment.bottomCenter : Alignment.topCenter,
+                alignment: widget.suggestionPosition == SuggestionPosition.above
+                    ? Alignment.bottomCenter
+                    : Alignment.topCenter,
                 child: Material(
                   elevation: 4,
                   child: ListView.builder(
@@ -323,7 +361,8 @@ class FlutterParsedTextFieldState extends State<FlutterParsedTextField> {
                       }
 
                       return ListTile(
-                        title: Text('${matcher.trigger}${matcher.displayProp(suggestion)}'),
+                        title: Text(
+                            '${matcher.trigger}${matcher.displayProp(suggestion)}'),
                         onTap: () => applySuggestion(
                           matcher: matcher,
                           suggestion: suggestion,
@@ -360,7 +399,8 @@ class FlutterParsedTextFieldState extends State<FlutterParsedTextField> {
       var lengthOfMatch = token.length;
 
       if (token.isNotEmpty) {
-        final matchers = widget.matchers.where((matcher) => matcher.trigger == token[0]);
+        final matchers =
+            widget.matchers.where((matcher) => matcher.trigger == token[0]);
 
         if (matchers.length > 1) {
           throw 'Multiple matchers match $token';
@@ -377,22 +417,133 @@ class FlutterParsedTextFieldState extends State<FlutterParsedTextField> {
               case MatcherSearchStyle.contains:
                 return matcher.displayProp(e).contains(search);
               case MatcherSearchStyle.iStartsWith:
-                return matcher.displayProp(e).toLowerCase().startsWith(search.toLowerCase());
+                return matcher
+                    .displayProp(e)
+                    .toLowerCase()
+                    .startsWith(search.toLowerCase());
               case MatcherSearchStyle.iContains:
-                return matcher.displayProp(e).toLowerCase().contains(search.toLowerCase());
+                return matcher
+                    .displayProp(e)
+                    .toLowerCase()
+                    .contains(search.toLowerCase());
             }
           }).toList();
 
           if (matcher.resultSort != null) {
-            matchedSuggestions.sort((a, b) => matcher.resultSort!(search, a, b));
+            matchedSuggestions
+                .sort((a, b) => matcher.resultSort!(search, a, b));
           }
 
           if (widget.suggestionLimit != null) {
-            matchedSuggestions = matchedSuggestions.take(widget.suggestionLimit!).toList();
+            matchedSuggestions =
+                matchedSuggestions.take(widget.suggestionLimit!).toList();
           }
 
           if (matcher.finalResultSort != null) {
-            matchedSuggestions.sort((a, b) => matcher.finalResultSort!(search, a, b));
+            matchedSuggestions
+                .sort((a, b) => matcher.finalResultSort!(search, a, b));
+          }
+
+          matcher.indexOfMatch = indexOfMatch;
+          matcher.lengthOfMatch = lengthOfMatch;
+
+          if (widget.suggestionMatches != null) {
+            widget.suggestionMatches!(matcher, matchedSuggestions);
+          }
+
+          if (!widget.disableSuggestionOverlay) {
+            _showSuggestionsOverlay(
+              matcher: matcher,
+              suggestions: matchedSuggestions,
+            );
+          }
+
+          return;
+        }
+      }
+    }
+
+    if (widget.suggestionMatches != null) {
+      widget.suggestionMatches!(null, []);
+    }
+
+    _hideSuggestionOverlay();
+  }
+
+  /// Detect the Trailing Trigger Query (for trigger having space in front)
+  /// returns start index of detected query
+  int identifyTrailingQuery(String txt, RegExp trgr,
+      {bool checkSpaceBefore = true}) {
+    var idx = txt.lastIndexOf(trgr);
+    if (!checkSpaceBefore) return idx;
+    if (idx <= 0) return idx; // ie idx can be either from {0, 1}
+    return txt[idx - 1].isBlank ? idx : -1; // Check for whitespace in front
+  }
+
+  void _suggestionListener2() {
+    // if (_ignore) {
+    //   _ignore = false;
+
+    // }
+    final cursorPos = _controller.selection.baseOffset;
+
+    if (cursorPos > 0) {
+      final text = _controller.value.text;
+      //final lastIndexOfSpace = text.lastIndexOf(RegExp(r'\s'), cursorPos - 1);
+
+      final textBeforeCursor = text.substring(0, cursorPos);
+      var indexOfMatch =
+          identifyTrailingQuery(textBeforeCursor, RegExp(_triggerPattern));
+      //final shouldTrigger = token.startsWith(RegExp(_triggerPattern));
+      final token =
+          indexOfMatch != -1 ? text.substring(indexOfMatch, cursorPos) : '';
+
+      if (token.isNotBlank) {
+        var lengthOfMatch = token.length;
+        final matchers =
+            widget.matchers.where((matcher) => matcher.trigger == token[0]);
+
+        if (matchers.length > 1) {
+          throw 'Multiple matchers match $token';
+        }
+
+        if (matchers.length == 1) {
+          final search = token.substring(1);
+          //.trim(); // trimming inorder to avoid the { space closing the suggestion box } situation
+          final matcher = matchers.first;
+
+          var matchedSuggestions = matcher.suggestions.where((e) {
+            switch (matcher.searchStyle) {
+              case MatcherSearchStyle.startsWith:
+                return matcher.displayProp(e).startsWith(search);
+              case MatcherSearchStyle.contains:
+                return matcher.displayProp(e).contains(search);
+              case MatcherSearchStyle.iStartsWith:
+                return matcher
+                    .displayProp(e)
+                    .toLowerCase()
+                    .startsWith(search.toLowerCase());
+              case MatcherSearchStyle.iContains:
+                return matcher
+                    .displayProp(e)
+                    .toLowerCase()
+                    .contains(search.toLowerCase());
+            }
+          }).toList();
+
+          if (matcher.resultSort != null) {
+            matchedSuggestions
+                .sort((a, b) => matcher.resultSort!(search, a, b));
+          }
+
+          if (widget.suggestionLimit != null) {
+            matchedSuggestions =
+                matchedSuggestions.take(widget.suggestionLimit!).toList();
+          }
+
+          if (matcher.finalResultSort != null) {
+            matchedSuggestions
+                .sort((a, b) => matcher.finalResultSort!(search, a, b));
           }
 
           matcher.indexOfMatch = indexOfMatch;
@@ -430,18 +581,30 @@ class FlutterParsedTextFieldState extends State<FlutterParsedTextField> {
     _hideSuggestionOverlay();
   }
 
+  /// Join all triggers by {delim}
+  String pippedTriggers(List<Matcher> matchers) {
+    return matchers.map((m) => m.trigger).toSet().join('|');
+  }
+
+  void onChangedImpl(String txt) {
+    widget.onChanged?.call(txt);
+    _controller.updatePickedTags(); // remove tags if needed !
+  }
+
   @override
   void initState() {
     super.initState();
 
     _controller = widget.controller ?? FlutterParsedTextFieldController();
+    _triggerPattern = pippedTriggers(widget.matchers);
     _controller.matchers = widget.matchers;
 
-    _controller.addListener(_suggestionListener);
+    _controller.addListener(_suggestionListener2);
   }
 
   @override
   void didUpdateWidget(covariant FlutterParsedTextField oldWidget) {
+    _triggerPattern = pippedTriggers(widget.matchers);
     _controller.matchers = widget.matchers;
 
     super.didUpdateWidget(oldWidget);
@@ -451,7 +614,9 @@ class FlutterParsedTextFieldState extends State<FlutterParsedTextField> {
   void didChangeDependencies() {
     super.didChangeDependencies();
 
-    context.watch<SuggestionApplier?>()?.removeListener(_applySuggestionListener);
+    context
+        .watch<SuggestionApplier?>()
+        ?.removeListener(_applySuggestionListener);
     context.watch<SuggestionApplier?>()?.addListener(_applySuggestionListener);
   }
 
@@ -492,7 +657,7 @@ class FlutterParsedTextFieldState extends State<FlutterParsedTextField> {
           expands: widget.expands,
           maxLength: widget.maxLength,
           maxLengthEnforcement: widget.maxLengthEnforcement,
-          onChanged: widget.onChanged,
+          onChanged: onChangedImpl,
           onEditingComplete: widget.onEditingComplete,
           onSubmitted: widget.onSubmitted,
           onAppPrivateCommand: widget.onAppPrivateCommand,
@@ -524,7 +689,7 @@ class FlutterParsedTextFieldState extends State<FlutterParsedTextField> {
 
   @override
   void dispose() {
-    _controller.removeListener(_suggestionListener);
+    _controller.removeListener(_suggestionListener2);
 
     super.dispose();
   }

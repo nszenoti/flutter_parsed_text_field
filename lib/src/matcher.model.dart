@@ -83,6 +83,11 @@ class Matcher<T> {
   /// Eg "Hey @Ir" would be 3.
   int? lengthOfMatch;
 
+  /// need to compulsory pick the suggestion from suggestion box inorder to make it effective for [this Matcher]
+  /// If True then [alwaysHighlight] will be ignored (ie its value will be coerced to false)
+  /// ie [alwaysHighlight = false] effectively
+  final bool needToPickFirstSuggestion;
+
   /// This is the core of what makes flutter_parsed_text_field work. This is where you define what [trigger]s suggestions,
   /// what those [suggestions] are, and how they are used.
   Matcher({
@@ -100,14 +105,19 @@ class Matcher<T> {
     this.style,
     this.suggestionBuilder,
     this.alwaysHighlight = false,
+    this.needToPickFirstSuggestion = false,
   }) : assert(trigger.length == 1);
 
   Type typeOf() => T;
 
   String get regexPattern {
+    var includeAll = needToPickFirstSuggestion ? false : alwaysHighlight;
     final regexes = [
-      if (alwaysHighlight) '[A-Za-z0-9]+',
-      ...suggestions.map(displayProp).map((s) => RegExp.escape(s)).sortedDescending(),
+      if (includeAll) '[A-Za-z0-9]+',
+      ...suggestions
+          .map(displayProp)
+          .map((s) => RegExp.escape(s))
+          .sortedDescending(),
     ].map((s) => '$trigger$s');
 
     return regexes.isEmpty ? '' : '(${regexes.join('|')})';
