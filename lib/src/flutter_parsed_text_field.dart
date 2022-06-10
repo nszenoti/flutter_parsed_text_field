@@ -489,6 +489,7 @@ class FlutterParsedTextFieldState extends State<FlutterParsedTextField> {
     //   _ignore = false;
 
     // }
+    if (_triggerPattern.isEmpty) return;
     final cursorPos = _controller.selection.baseOffset;
 
     if (cursorPos > 0) {
