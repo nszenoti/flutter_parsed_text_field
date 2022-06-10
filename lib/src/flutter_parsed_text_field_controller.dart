@@ -2,21 +2,41 @@ part of flutter_parsed_text_field;
 
 class FlutterParsedTextFieldController extends TextEditingController {
   /// The list of matchers that are to be recognized in this text field
-  List<Matcher> matchers = List<Matcher>.empty();
+  List<Matcher> _matchers = List<Matcher>.empty();
 
-  RegExp get _combinedRegex => RegExp(matchers.map((m) => m.regexPattern).where((e) => e.isNotEmpty).join('|'));
+  // TODO : Optimize this _combinedRegex thing
+  // RegExp get _combinedRegex => RegExp(
+  //     matchers.map((m) => m.regexPattern).where((e) => e.isNotEmpty).join('|'));
+  RegExp _combinedRegex = RegExp('');
 
-  RegExp get _combinedParseRegex => RegExp(matchers.map((m) => m.parseRegExp.pattern).join('|'));
+  RegExp get _combinedParseRegex =>
+      RegExp(_matchers.map((m) => m.parseRegExp.pattern).join('|'));
 
   FlutterParsedTextFieldController() : super();
 
+  set matchers(List<Matcher> ms) {
+    _matchers = ms;
+    // Update combined regex
+    _combinedRegex = RegExp(_matchers
+        .map((m) => m.regexPattern)
+        .where((e) => e.isNotEmpty)
+        .join('|'));
+  }
+
   set textParsed(val) => text = parse(val);
+
+  Set<String> _picked = <String>{}; // set of mentions which are picked from box
+
+  /// Track the picked Suggestion from suggestion box
+  void addPickup(String s) {
+    _picked.add(s);
+  }
 
   /// Return the parsed version of your text
   ///
   /// Eg "Hey [[@Ironman:uid3000]]" => "Hey @Ironman"
   String parse(String stringifiedText) {
-    if (matchers.isEmpty) {
+    if (_matchers.isEmpty) {
       return stringifiedText;
     }
 
@@ -24,9 +44,12 @@ class FlutterParsedTextFieldController extends TextEditingController {
       _combinedParseRegex,
       onMatch: (Match match) {
         final fullMatch = match[0]!;
-        final matcher = matchers.firstWhere((m) => m.parseRegExp.hasMatch(fullMatch));
+        final matcher =
+            _matchers.firstWhere((m) => m.parseRegExp.hasMatch(fullMatch));
         final parsedMatch = matcher.parse(matcher.parseRegExp, fullMatch);
-        final suggestions = matcher.suggestions.where((s) => matcher.idProp(s) == matcher.idProp(parsedMatch)).toList();
+        final suggestions = matcher.suggestions
+            .where((s) => matcher.idProp(s) == matcher.idProp(parsedMatch))
+            .toList();
 
         if (suggestions.isNotEmpty) {
           assert(suggestions.length == 1);
@@ -47,7 +70,7 @@ class FlutterParsedTextFieldController extends TextEditingController {
   ///
   /// Eg "Hey @Ironman" => "Hey [[@Ironman:uid3000]]"
   String stringify() {
-    if (matchers.isEmpty) {
+    if (_matchers.isEmpty) {
       return text;
     }
 
@@ -55,16 +78,30 @@ class FlutterParsedTextFieldController extends TextEditingController {
       _combinedRegex,
       onMatch: (Match match) {
         final display = match[0]!;
-        final matcher = matchers.firstWhere((m) => m.regexPattern.isNotEmpty && RegExp(m.regexPattern).hasMatch(display));
-        final suggestions = matcher.suggestions.where((e) => '${matcher.trigger}${matcher.displayProp(e)}' == display).toList();
+        final matcher = _matchers.firstWhere((m) =>
+            m.regexPattern.isNotEmpty &&
+            RegExp(m.regexPattern).hasMatch(display));
+        final suggestions = matcher.suggestions
+            .where(
+                (e) => '${matcher.trigger}${matcher.displayProp(e)}' == display)
+            .toList();
 
         if (suggestions.isNotEmpty) {
-          assert(suggestions.length == 1);
-          return matcher.stringify(matcher.trigger, suggestions.first);
-        }
-
-        if (matcher.alwaysHighlight) {
-          return matcher.stringify(matcher.trigger, display);
+          // TODO: This is hindering the Same Multi-Display Name
+          //assert(suggestions.length == 1);
+          if (matcher.needToPickFirstSuggestion) {
+            if (_picked.contains(display)) {
+              return matcher.stringify(matcher.trigger, suggestions.first);
+            } else {
+              return display;
+            }
+          } else {
+            return matcher.stringify(matcher.trigger, suggestions.first);
+          }
+        } else {
+          if (!matcher.needToPickFirstSuggestion && matcher.alwaysHighlight) {
+            return matcher.stringify(matcher.trigger, display);
+          }
         }
 
         throw '`suggestions` is empty and `alwaysHighlight` is false.';
@@ -73,9 +110,49 @@ class FlutterParsedTextFieldController extends TextEditingController {
     );
   }
 
+  void updatePickedTags() {
+    if (_picked.isEmpty) return;
+    var present = <String>{};
+
+    text.splitMapJoin(
+      _combinedRegex,
+      onMatch: (Match match) {
+        var tag = match[0]!;
+        if (_picked.contains(tag)) {
+          present.add(tag);
+        }
+        return '';
+      },
+      onNonMatch: (String text) {
+        return '';
+      },
+    );
+
+    // Update the picked annotations set
+    //var dropped = _picked.difference(present);
+
+    //if (dropped.isNotEmpty) {
+    _picked = _picked.intersection(present);
+    //}
+
+    // TODO: Add functionality for notifying Dropped Tags (ie Create Map of Tag -> Id)
+    // // var dropped = _registry.intersection(anots);
+    // if (dropped.isNotEmpty) {
+    //   for (var d in dropped) {
+    //     //_registry.removeAll(droppedOut);
+    //     var annot = _mapping[d];
+    //     var m = {'id': annot?.id, 'display': annot?.display};
+    //     onMentionDrop?.call(m);
+    //   }
+    // }
+  }
+
   @override
-  TextSpan buildTextSpan({required BuildContext context, TextStyle? style, required bool withComposing}) {
-    if (matchers.isEmpty) {
+  TextSpan buildTextSpan(
+      {required BuildContext context,
+      TextStyle? style,
+      required bool withComposing}) {
+    if (_matchers.isEmpty) {
       return TextSpan(
         text: text,
         style: style,
@@ -87,14 +164,22 @@ class FlutterParsedTextFieldController extends TextEditingController {
     text.splitMapJoin(
       _combinedRegex,
       onMatch: (Match match) {
-        final matcher = matchers.firstWhere((m) => RegExp(m.regexPattern).hasMatch(match[0]!));
+        final matcher = _matchers
+            .firstWhere((m) => RegExp(m.regexPattern).hasMatch(match[0]!));
 
-        widgets.add(
-          TextSpan(
-            text: match[0],
-            style: style!.merge(matcher.style),
-          ),
-        );
+        final txt = match[0];
+        final doAddCustomStyle =
+            matcher.needToPickFirstSuggestion ? _picked.contains(txt) : true;
+        if (doAddCustomStyle) {
+          widgets.add(
+            TextSpan(
+              text: match[0],
+              style: style!.merge(matcher.style),
+            ),
+          );
+        } else {
+          widgets.add(TextSpan(text: txt, style: style));
+        }
 
         return '';
       },
