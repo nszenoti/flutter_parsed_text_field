@@ -26,6 +26,9 @@ class FlutterParsedTextField extends StatefulWidget {
   /// The position of the built-in suggestion popup; above or below the text field
   final SuggestionPosition? suggestionPosition;
 
+  /// currently detected query (ie token after trigger) will be feeded to this callback
+  final ValueChanged<String>? onQueryDetected;
+
   /****************************************************************
       FLUTTER TEXT FIELD PROPS
    ***************************************************************/
@@ -239,6 +242,7 @@ class FlutterParsedTextField extends StatefulWidget {
     this.autofillHints,
     this.restorationId,
     this.enableIMEPersonalizedLearning = true,
+    this.onQueryDetected,
   }) : super(key: key);
 
   @override
@@ -509,6 +513,11 @@ class FlutterParsedTextFieldState extends State<FlutterParsedTextField> {
 
         if (matchers.length == 1) {
           final search = token.substring(1);
+
+          if (search.isNotBlank && (widget.onQueryDetected != null)) {
+            widget.onQueryDetected!.call(search);
+          }
+
           //.trim(); // trimming inorder to avoid the { space closing the suggestion box } situation
           final matcher = matchers.first;
 
