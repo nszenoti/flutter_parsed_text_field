@@ -1,5 +1,6 @@
 library flutter_parsed_text_field;
 
+import 'dart:math';
 import 'dart:ui' as ui show BoxHeightStyle, BoxWidthStyle;
 
 import 'package:dartx/dartx.dart';

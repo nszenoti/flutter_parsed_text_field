@@ -29,6 +29,12 @@ class FlutterParsedTextField extends StatefulWidget {
   /// currently detected query (ie token after trigger) will be feeded to this callback
   final ValueChanged<String>? onQueryDetected;
 
+  /// Height of Suggestion Box
+  final double? overlayHeight;
+
+  /// Width of Suggestion Box
+  final double? overlayWidth;
+
   /****************************************************************
       FLUTTER TEXT FIELD PROPS
    ***************************************************************/
@@ -243,6 +249,8 @@ class FlutterParsedTextField extends StatefulWidget {
     this.restorationId,
     this.enableIMEPersonalizedLearning = true,
     this.onQueryDetected,
+    this.overlayHeight,
+    this.overlayWidth,
   }) : super(key: key);
 
   @override
@@ -323,21 +331,25 @@ class FlutterParsedTextFieldState extends State<FlutterParsedTextField> {
               kToolbarHeight -
               16;
 
+          var h = widget.suggestionPosition == SuggestionPosition.above
+              ? spaceAbove
+              : spaceBelow;
+          h = min(h, widget.overlayHeight ?? double.infinity);
+          var w = min(size.width, widget.overlayWidth ?? double.infinity);
+
           return Positioned(
-            width: size.width,
-            height: widget.suggestionPosition == SuggestionPosition.above
-                ? spaceAbove
-                : spaceBelow,
+            width: w,
+            height: h,
             child: CompositedTransformFollower(
               link: _layerLink,
               followerAnchor:
                   widget.suggestionPosition == SuggestionPosition.above
-                      ? Alignment.bottomCenter
-                      : Alignment.topCenter,
+                      ? Alignment.bottomLeft
+                      : Alignment.topLeft,
               targetAnchor:
                   widget.suggestionPosition == SuggestionPosition.above
-                      ? Alignment.topCenter
-                      : Alignment.bottomCenter,
+                      ? Alignment.topLeft
+                      : Alignment.bottomLeft,
               showWhenUnlinked: false,
               offset: Offset(
                   0,
