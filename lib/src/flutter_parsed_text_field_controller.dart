@@ -2,15 +2,26 @@ part of flutter_parsed_text_field;
 
 class FlutterParsedTextFieldController extends TextEditingController {
   /// The list of matchers that are to be recognized in this text field
-  List<Matcher> matchers = List<Matcher>.empty();
+  List<Matcher> _matchers = List<Matcher>.empty();
 
-  RegExp get _combinedRegex => RegExp(
-      matchers.map((m) => m.regexPattern).where((e) => e.isNotEmpty).join('|'));
+  // TODO : Optimize this _combinedRegex thing
+  // RegExp get _combinedRegex => RegExp(
+  //     matchers.map((m) => m.regexPattern).where((e) => e.isNotEmpty).join('|'));
+  RegExp _combinedRegex = RegExp('');
 
   RegExp get _combinedParseRegex =>
-      RegExp(matchers.map((m) => m.parseRegExp.pattern).join('|'));
+      RegExp(_matchers.map((m) => m.parseRegExp.pattern).join('|'));
 
   FlutterParsedTextFieldController() : super();
+
+  set matchers(List<Matcher> ms) {
+    _matchers = ms;
+    // Update combined regex
+    _combinedRegex = RegExp(_matchers
+        .map((m) => m.regexPattern)
+        .where((e) => e.isNotEmpty)
+        .join('|'));
+  }
 
   set textParsed(val) => text = parse(val);
 
@@ -25,7 +36,7 @@ class FlutterParsedTextFieldController extends TextEditingController {
   ///
   /// Eg "Hey [[@Ironman:uid3000]]" => "Hey @Ironman"
   String parse(String stringifiedText) {
-    if (matchers.isEmpty) {
+    if (_matchers.isEmpty) {
       return stringifiedText;
     }
 
@@ -34,7 +45,7 @@ class FlutterParsedTextFieldController extends TextEditingController {
       onMatch: (Match match) {
         final fullMatch = match[0]!;
         final matcher =
-            matchers.firstWhere((m) => m.parseRegExp.hasMatch(fullMatch));
+            _matchers.firstWhere((m) => m.parseRegExp.hasMatch(fullMatch));
         final parsedMatch = matcher.parse(matcher.parseRegExp, fullMatch);
         final suggestions = matcher.suggestions
             .where((s) => matcher.idProp(s) == matcher.idProp(parsedMatch))
@@ -59,7 +70,7 @@ class FlutterParsedTextFieldController extends TextEditingController {
   ///
   /// Eg "Hey @Ironman" => "Hey [[@Ironman:uid3000]]"
   String stringify() {
-    if (matchers.isEmpty) {
+    if (_matchers.isEmpty) {
       return text;
     }
 
@@ -67,7 +78,7 @@ class FlutterParsedTextFieldController extends TextEditingController {
       _combinedRegex,
       onMatch: (Match match) {
         final display = match[0]!;
-        final matcher = matchers.firstWhere((m) =>
+        final matcher = _matchers.firstWhere((m) =>
             m.regexPattern.isNotEmpty &&
             RegExp(m.regexPattern).hasMatch(display));
         final suggestions = matcher.suggestions
@@ -141,7 +152,7 @@ class FlutterParsedTextFieldController extends TextEditingController {
       {required BuildContext context,
       TextStyle? style,
       required bool withComposing}) {
-    if (matchers.isEmpty) {
+    if (_matchers.isEmpty) {
       return TextSpan(
         text: text,
         style: style,
@@ -153,7 +164,7 @@ class FlutterParsedTextFieldController extends TextEditingController {
     text.splitMapJoin(
       _combinedRegex,
       onMatch: (Match match) {
-        final matcher = matchers
+        final matcher = _matchers
             .firstWhere((m) => RegExp(m.regexPattern).hasMatch(match[0]!));
 
         final txt = match[0];
