@@ -370,15 +370,18 @@ class FlutterParsedTextFieldState extends State<FlutterParsedTextField> {
                       final suggestion = suggestions[index];
 
                       if (matcher.suggestionBuilder != null) {
-                        return matcher.suggestionBuilder!(
-                          matcher,
-                          suggestion,
+                        return InkWell(
+                          onTap: () => applySuggestion(
+                            matcher: matcher,
+                            suggestion: suggestion,
+                          ),
+                          child: matcher.suggestionBuilder!
+                              .call(matcher, suggestion),
                         );
                       }
 
                       return ListTile(
-                        title: Text(
-                            '${matcher.trigger}${matcher.displayProp(suggestion)}'),
+                        title: Text('${matcher.displayProp(suggestion)}'),
                         onTap: () => applySuggestion(
                           matcher: matcher,
                           suggestion: suggestion,
@@ -488,7 +491,7 @@ class FlutterParsedTextFieldState extends State<FlutterParsedTextField> {
 
   /// Detect the Trailing Trigger Query (for trigger having space in front)
   /// returns start index of detected query
-  int identifyTrailingQuery(String txt, RegExp trgr,
+  int _identifyTrailingQuery(String txt, RegExp trgr,
       {bool checkSpaceBefore = true}) {
     var idx = txt.lastIndexOf(trgr);
     if (!checkSpaceBefore) return idx;
@@ -510,7 +513,7 @@ class FlutterParsedTextFieldState extends State<FlutterParsedTextField> {
 
       final textBeforeCursor = text.substring(0, cursorPos);
       var indexOfMatch =
-          identifyTrailingQuery(textBeforeCursor, RegExp(_triggerPattern));
+          _identifyTrailingQuery(textBeforeCursor, RegExp(_triggerPattern));
       //final shouldTrigger = token.startsWith(RegExp(_triggerPattern));
       final token =
           indexOfMatch != -1 ? text.substring(indexOfMatch, cursorPos) : '';
@@ -611,11 +614,11 @@ class FlutterParsedTextFieldState extends State<FlutterParsedTextField> {
   }
 
   /// Join all triggers by {delim}
-  String pippedTriggers(List<Matcher> matchers) {
+  String _pippedTriggers(List<Matcher> matchers) {
     return matchers.map((m) => m.trigger).toSet().join('|');
   }
 
-  void onChangedImpl(String txt) {
+  void _onChangedImpl(String txt) {
     widget.onChanged?.call(txt);
     _controller.updatePickedTags(); // remove tags if needed !
   }
@@ -625,7 +628,7 @@ class FlutterParsedTextFieldState extends State<FlutterParsedTextField> {
     super.initState();
 
     _controller = widget.controller ?? FlutterParsedTextFieldController();
-    _triggerPattern = pippedTriggers(widget.matchers);
+    _triggerPattern = _pippedTriggers(widget.matchers);
     _controller.matchers = widget.matchers;
 
     _controller.addListener(_suggestionListener2);
@@ -643,7 +646,7 @@ class FlutterParsedTextFieldState extends State<FlutterParsedTextField> {
 
   @override
   void didUpdateWidget(covariant FlutterParsedTextField oldWidget) {
-    _triggerPattern = pippedTriggers(widget.matchers);
+    _triggerPattern = _pippedTriggers(widget.matchers);
     _controller.matchers = widget.matchers;
 
     // if (isLastWordAToken(_controller.text, RegExp(_triggerPattern))) {
@@ -705,7 +708,7 @@ class FlutterParsedTextFieldState extends State<FlutterParsedTextField> {
           expands: widget.expands,
           maxLength: widget.maxLength,
           maxLengthEnforcement: widget.maxLengthEnforcement,
-          onChanged: onChangedImpl,
+          onChanged: _onChangedImpl,
           onEditingComplete: widget.onEditingComplete,
           onSubmitted: widget.onSubmitted,
           onAppPrivateCommand: widget.onAppPrivateCommand,
