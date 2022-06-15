@@ -527,6 +527,13 @@ class FlutterParsedTextFieldState extends State<FlutterParsedTextField> {
         if (matchers.length == 1) {
           final search = token.substring(1);
 
+          // TODO: Check Trailing Space Length (thresold) to proceed ahead
+          // var presearch = token.substring(1);
+          // var trimmedSearch = presearch.trimRight();
+          // if (presearch.length - trimmedSearch.length > 2) {
+          //   return;
+          // }
+
           if (search.isNotBlank && (widget.onQueryDetected != null)) {
             widget.onQueryDetected!.call(search);
           }
@@ -624,10 +631,29 @@ class FlutterParsedTextFieldState extends State<FlutterParsedTextField> {
     _controller.addListener(_suggestionListener2);
   }
 
+  // bool isLastWordAToken(
+  //   String text,
+  //   RegExp trigger, {
+  //   bool requireSpaceBefore = true,
+  // }) {
+  //   final lastWord = text.split(RegExp(r'\s+')).last;
+  //   if()
+  //   return ((lastWord.length > 1) && (lastWord.startsWith('@')));
+  // }
+
   @override
   void didUpdateWidget(covariant FlutterParsedTextField oldWidget) {
     _triggerPattern = pippedTriggers(widget.matchers);
     _controller.matchers = widget.matchers;
+
+    // if (isLastWordAToken(_controller.text, RegExp(_triggerPattern))) {
+    // To Show the Overlay
+    WidgetsBinding.instance.addPostFrameCallback(
+      (_) {
+        _suggestionListener2();
+      },
+    );
+    //}
 
     super.didUpdateWidget(oldWidget);
   }
