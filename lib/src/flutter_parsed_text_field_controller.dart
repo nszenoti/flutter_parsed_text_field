@@ -2,7 +2,7 @@ part of flutter_parsed_text_field;
 
 class FlutterParsedTextFieldController extends TextEditingController {
   /// The list of matchers that are to be recognized in this text field
-  List<Matcher> _matchers = List<Matcher>.empty();
+  List<Matcher> _matchers = [];
 
   // TODO : Optimize this _combinedRegex thing
   // RegExp get _combinedRegex => RegExp(
@@ -17,6 +17,7 @@ class FlutterParsedTextFieldController extends TextEditingController {
   set matchers(List<Matcher> ms) {
     _matchers = ms;
     // Update combined regex
+    // NOTE Combined Regex will only changed when matchers/Suggestions list gets updated
     _combinedRegex = RegExp(_matchers
         .map((m) => m.regexPattern)
         .where((e) => e.isNotEmpty)
@@ -36,7 +37,7 @@ class FlutterParsedTextFieldController extends TextEditingController {
   ///
   /// Eg "Hey [[@Ironman:uid3000]]" => "Hey @Ironman"
   String parse(String stringifiedText) {
-    if (_matchers.isEmpty) {
+    if (_combinedParseRegex.pattern.isEmpty) {
       return stringifiedText;
     }
 
@@ -60,7 +61,9 @@ class FlutterParsedTextFieldController extends TextEditingController {
           return '${matcher.trigger}${matcher.displayProp(parsedMatch)}';
         }
 
-        throw '`suggestions` is empty and `alwaysHighlight` is false.';
+        // ! TODO: Check this below scenario
+        return fullMatch;
+        //throw '`suggestions` is empty and `alwaysHighlight` is false.';
       },
       onNonMatch: (String text) => text,
     );
@@ -70,14 +73,17 @@ class FlutterParsedTextFieldController extends TextEditingController {
   ///
   /// Eg "Hey @Ironman" => "Hey [[@Ironman:uid3000]]"
   String stringify() {
-    if (_matchers.isEmpty) {
+    //TODO: Add check for combinedRegex
+    if (_combinedRegex.pattern.isEmpty) {
       return text;
     }
 
+    // TODO> Use splitApply() to optimize
     return text.splitMapJoin(
       _combinedRegex,
       onMatch: (Match match) {
-        final display = match[0]!;
+        // TODO: Wrap with try catch
+        final display = match[0]!; // text which will get displayed in TextField
         final matcher = _matchers.firstWhere((m) =>
             m.regexPattern.isNotEmpty &&
             RegExp(m.regexPattern).hasMatch(display));
@@ -89,6 +95,7 @@ class FlutterParsedTextFieldController extends TextEditingController {
         if (suggestions.isNotEmpty) {
           // TODO: This is hindering the Same Multi-Display Name
           //assert(suggestions.length == 1);
+          // ! if suggestions length is more than 1 i.e that more than 1 suggestion have same display name
           if (matcher.needToPickFirstSuggestion) {
             if (_picked.contains(display)) {
               return matcher.stringify(matcher.trigger, suggestions.first);
@@ -99,12 +106,14 @@ class FlutterParsedTextFieldController extends TextEditingController {
             return matcher.stringify(matcher.trigger, suggestions.first);
           }
         } else {
+          // No suggestion found (ie that any word with this trigger is allowed ie alwaysHighlight)
           if (!matcher.needToPickFirstSuggestion && matcher.alwaysHighlight) {
             return matcher.stringify(matcher.trigger, display);
           }
         }
 
-        throw '`suggestions` is empty and `alwaysHighlight` is false.';
+        return display;
+        //throw '`suggestions` is empty and `alwaysHighlight` is false.';
       },
       onNonMatch: (String text) => text,
     );
@@ -152,7 +161,7 @@ class FlutterParsedTextFieldController extends TextEditingController {
       {required BuildContext context,
       TextStyle? style,
       required bool withComposing}) {
-    if (_matchers.isEmpty) {
+    if (_combinedRegex.pattern.isEmpty) {
       return TextSpan(
         text: text,
         style: style,
