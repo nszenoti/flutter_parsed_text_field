@@ -25,13 +25,13 @@ class Matcher<T> {
   ///
   /// Eg {userId: 'uid3000', displayName: 'Ironman'}
   /// idProp = (suggestion) => suggestion.userId
-  final String Function(dynamic suggestion) idProp;
+  final String Function(T suggestion) idProp;
 
   /// A function to return the display of the suggestion.
   ///
   /// Eg {userId: 'uid3000', displayName: 'Ironman'}
   /// idProp = (suggestion) => suggestion.displayName
-  final String Function(dynamic suggestion) displayProp;
+  final String Function(T suggestion) displayProp;
 
   /// How the search logic should be applied
   final MatcherSearchStyle searchStyle;
@@ -111,6 +111,8 @@ class Matcher<T> {
     this.needToPickFirstSuggestion = false,
   }) : assert(trigger.length == 1) {
     var includeAll = needToPickFirstSuggestion ? false : alwaysHighlight;
+
+    // TODO: Take Set of regex before joining them
     final regexes = [
       if (includeAll) '[A-Za-z0-9]+',
       ...suggestions
