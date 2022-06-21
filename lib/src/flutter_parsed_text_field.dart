@@ -325,6 +325,7 @@ class FlutterParsedTextFieldState extends State<FlutterParsedTextField> {
     }
 
     if (notifyTxt.isEmpty && suggestions.isEmpty) {
+      _hideSuggestionOverlay();
       return;
     }
 
@@ -525,6 +526,8 @@ class FlutterParsedTextFieldState extends State<FlutterParsedTextField> {
     if (_triggerPattern.isEmpty) return;
     final cursorPos = _controller.selection.baseOffset;
 
+    // TODO: Do make below changes if text length changes ! (not when cursor changes)
+
     //* REMEMBER :_ CursorPos = #characters behind it
     if (cursorPos > 0) {
       final text = _controller.value.text;
@@ -562,6 +565,7 @@ class FlutterParsedTextFieldState extends State<FlutterParsedTextField> {
 
           if (search.isBlank) {
             // TODO: Decide if to display all suggestions on {trgr} character or none
+            _hideSuggestionOverlay();
             return;
           }
 
@@ -732,6 +736,7 @@ class FlutterParsedTextFieldState extends State<FlutterParsedTextField> {
 
   @override
   void didUpdateWidget(covariant FlutterParsedTextField oldWidget) {
+    super.didUpdateWidget(oldWidget);
     _triggerPattern = _pippedTriggers(widget.matchers);
     _controller.matchers = widget.matchers;
 
@@ -748,8 +753,6 @@ class FlutterParsedTextFieldState extends State<FlutterParsedTextField> {
       },
     );
     //}
-
-    super.didUpdateWidget(oldWidget);
   }
 
   @override
