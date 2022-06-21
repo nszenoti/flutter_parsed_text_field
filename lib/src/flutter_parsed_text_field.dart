@@ -746,17 +746,21 @@ class FlutterParsedTextFieldState extends State<FlutterParsedTextField> {
 
     // if (isLastWordAToken(_controller.text, RegExp(_triggerPattern))) {
     // To Show the Overlay
-    WidgetsBinding.instance.addPostFrameCallback(
-      (_) {
-        //if (!widget.isLoading && (oldWidget.isLoading != widget.isLoading)) {
-        if (oldWidget.isLoading != widget.isLoading) {
-          // API call ended or initiated
-          // TODO: Improve this action taking call (ie not always)
-          _suggestionListener2();
-        }
-      },
-    );
-    //}
+    final i = WidgetsBinding.instance;
+    if (i != null) {
+      // TODO: Making this check just to enusre it works for flutter 2.10 version
+      i.addPostFrameCallback(
+        (_) {
+          //if (!widget.isLoading && (oldWidget.isLoading != widget.isLoading)) {
+          if (oldWidget.isLoading != widget.isLoading) {
+            // API call ended or initiated
+            // TODO: Improve this action taking call (ie not always)
+            _suggestionListener2();
+          }
+        },
+      );
+      //}
+    }
   }
 
   @override
