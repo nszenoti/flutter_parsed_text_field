@@ -63,7 +63,7 @@ class Matcher<T> {
   // TODO: Test the below Generic Type change from dynamic -> T
   /// When a suggestion has been tapped and added to the text field, it will be returned.
   /// This allows you to, say, update the #hashtag list when an @mention has been added.
-  final Function(String trigger, T suggestion)? onSuggestionAdded;
+  final Function(String trigger, dynamic suggestion)? onSuggestionAdded;
 
   /// The [TextStyle] to be applied to matches within the text field
   final TextStyle? style;
