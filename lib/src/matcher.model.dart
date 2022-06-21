@@ -25,13 +25,13 @@ class Matcher<T> {
   ///
   /// Eg {userId: 'uid3000', displayName: 'Ironman'}
   /// idProp = (suggestion) => suggestion.userId
-  final String Function(T suggestion) idProp;
+  final String Function(dynamic suggestion) idProp;
 
   /// A function to return the display of the suggestion.
   ///
   /// Eg {userId: 'uid3000', displayName: 'Ironman'}
   /// idProp = (suggestion) => suggestion.displayName
-  final String Function(T suggestion) displayProp;
+  final String Function(dynamic suggestion) displayProp;
 
   /// How the search logic should be applied
   final MatcherSearchStyle searchStyle;
