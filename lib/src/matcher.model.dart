@@ -110,7 +110,7 @@ class Matcher<T> {
     this.suggestionBuilder,
     this.alwaysHighlight = false,
     this.needToPickFirstSuggestion = false,
-  }) : assert(trigger.length == 1) {
+  }) : assert(trigger.length == 1, "trigger length must be 1") {
     var includeAll = needToPickFirstSuggestion ? false : alwaysHighlight;
 
     // TODO: Take Set of regex before joining them

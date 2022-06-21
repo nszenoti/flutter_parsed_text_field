@@ -391,22 +391,21 @@ class FlutterParsedTextFieldState extends State<FlutterParsedTextField> {
                             final suggestion = suggestions[index];
 
                             if (matcher.suggestionBuilder != null) {
-                              return InkWell(
-                                onTap: () => applySuggestion(
-                                  matcher: matcher,
-                                  suggestion: suggestion,
-                                ),
-                                child: matcher.suggestionBuilder!
-                                    .call(matcher, suggestion),
+                              return matcher.suggestionBuilder!(
+                                matcher,
+                                suggestion,
                               );
                             }
 
                             return ListTile(
                               title: Text('${matcher.displayProp(suggestion)}'),
-                              onTap: () => applySuggestion(
-                                matcher: matcher,
-                                suggestion: suggestion,
-                              ),
+                              onTap: () {
+                                applySuggestion(
+                                  matcher: matcher,
+                                  suggestion: suggestion,
+                                );
+                                _hideSuggestionOverlay();
+                              },
                             );
                           },
                         ),
@@ -518,15 +517,15 @@ class FlutterParsedTextFieldState extends State<FlutterParsedTextField> {
     return txt[idx - 1].isBlank ? idx : -1; // Check for whitespace in front
   }
 
+  // TODO: Do make below changes if text length changes ! (not when cursor changes)
   void _suggestionListener2() {
     // if (_ignore) {
     //   _ignore = false;
 
     // }
     if (_triggerPattern.isEmpty) return;
-    final cursorPos = _controller.selection.baseOffset;
 
-    // TODO: Do make below changes if text length changes ! (not when cursor changes)
+    final cursorPos = _controller.selection.baseOffset;
 
     //* REMEMBER :_ CursorPos = #characters behind it
     if (cursorPos > 0) {
@@ -575,6 +574,8 @@ class FlutterParsedTextFieldState extends State<FlutterParsedTextField> {
           var presearch = token.substring(1);
           var trimmedSearch = presearch.trimRight();
           if ((presearch.length - trimmedSearch.length) > 2) {
+            // TODO Check this & Verify if to hide Suggestion Box or not
+            //_hideSuggestionOverlay();
             return;
           }
 
@@ -711,6 +712,9 @@ class FlutterParsedTextFieldState extends State<FlutterParsedTextField> {
   void _onChangedImpl(String txt) {
     widget.onChanged?.call(txt);
     _controller.updatePickedTags(); // remove tags if needed !
+
+    //* TODO: Decide if you need to show suggestion box as cursor changes or text changes
+    _suggestionListener2();
   }
 
   @override
@@ -721,7 +725,7 @@ class FlutterParsedTextFieldState extends State<FlutterParsedTextField> {
     _triggerPattern = _pippedTriggers(widget.matchers);
     _controller.matchers = widget.matchers;
 
-    _controller.addListener(_suggestionListener2);
+    //_controller.addListener(_suggestionListener2);
   }
 
   // bool isLastWordAToken(
@@ -834,7 +838,7 @@ class FlutterParsedTextFieldState extends State<FlutterParsedTextField> {
 
   @override
   void dispose() {
-    _controller.removeListener(_suggestionListener2);
+    //_controller.removeListener(_suggestionListener2);
 
     super.dispose();
   }
