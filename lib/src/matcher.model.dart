@@ -60,9 +60,10 @@ class Matcher<T> {
   /// A function to parse the stringified suggestion back into an object.
   final T Function(RegExp regex, String stringifiedSuggestion) parse;
 
+  // TODO: Test the below Generic Type change from dynamic -> T
   /// When a suggestion has been tapped and added to the text field, it will be returned.
   /// This allows you to, say, update the #hashtag list when an @mention has been added.
-  final Function(String trigger, dynamic suggestion)? onSuggestionAdded;
+  final Function(String trigger, T suggestion)? onSuggestionAdded;
 
   /// The [TextStyle] to be applied to matches within the text field
   final TextStyle? style;
