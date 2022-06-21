@@ -189,6 +189,9 @@ class FlutterParsedTextField extends StatefulWidget {
   /// {@macro flutter.widgets.editableText.enableIMEPersonalizedLearning}
   final bool enableIMEPersonalizedLearning;
 
+  /// Show Indicator that Suggestions are being fetched
+  final bool isLoading;
+
   const FlutterParsedTextField({
     Key? key,
     this.controller,
@@ -251,6 +254,7 @@ class FlutterParsedTextField extends StatefulWidget {
     this.onQueryDetected,
     this.overlayHeight,
     this.overlayWidth,
+    this.isLoading = false,
   }) : super(key: key);
 
   @override
@@ -309,6 +313,20 @@ class FlutterParsedTextFieldState extends State<FlutterParsedTextField> {
     required List<T> suggestions,
   }) {
     final renderBox = context.findRenderObject() as RenderBox?;
+    String notifyTxt = '';
+    if (suggestions.isEmpty) {
+      if (widget.isLoading) {
+        // TODO: Take this notifyText to param level
+        notifyTxt = 'Searching...';
+      }
+      // } else {
+      //   notifyTxt = 'No results found !';
+      // }
+    }
+
+    if (notifyTxt.isEmpty && suggestions.isEmpty) {
+      return;
+    }
 
     if (renderBox != null) {
       _hideSuggestionOverlay();
@@ -362,33 +380,35 @@ class FlutterParsedTextFieldState extends State<FlutterParsedTextField> {
                     : Alignment.topCenter,
                 child: Material(
                   elevation: 4,
-                  child: ListView.builder(
-                    padding: EdgeInsets.zero,
-                    shrinkWrap: true,
-                    itemCount: suggestions.length,
-                    itemBuilder: (BuildContext context, int index) {
-                      final suggestion = suggestions[index];
+                  child: notifyTxt.isNotEmpty
+                      ? ListTile(title: Text(notifyTxt))
+                      : ListView.builder(
+                          padding: EdgeInsets.zero,
+                          shrinkWrap: true,
+                          itemCount: suggestions.length,
+                          itemBuilder: (BuildContext context, int index) {
+                            final suggestion = suggestions[index];
 
-                      if (matcher.suggestionBuilder != null) {
-                        return InkWell(
-                          onTap: () => applySuggestion(
-                            matcher: matcher,
-                            suggestion: suggestion,
-                          ),
-                          child: matcher.suggestionBuilder!
-                              .call(matcher, suggestion),
-                        );
-                      }
+                            if (matcher.suggestionBuilder != null) {
+                              return InkWell(
+                                onTap: () => applySuggestion(
+                                  matcher: matcher,
+                                  suggestion: suggestion,
+                                ),
+                                child: matcher.suggestionBuilder!
+                                    .call(matcher, suggestion),
+                              );
+                            }
 
-                      return ListTile(
-                        title: Text('${matcher.displayProp(suggestion)}'),
-                        onTap: () => applySuggestion(
-                          matcher: matcher,
-                          suggestion: suggestion,
+                            return ListTile(
+                              title: Text('${matcher.displayProp(suggestion)}'),
+                              onTap: () => applySuggestion(
+                                matcher: matcher,
+                                suggestion: suggestion,
+                              ),
+                            );
+                          },
                         ),
-                      );
-                    },
-                  ),
                 ),
               ),
             ),
@@ -405,96 +425,94 @@ class FlutterParsedTextFieldState extends State<FlutterParsedTextField> {
     _suggestionOverlay = null;
   }
 
-  void _suggestionListener() {
-    final cursorPos = _controller.selection.baseOffset;
+  // void _suggestionListener() {
+  //   final cursorPos = _controller.selection.baseOffset;
 
-    if (cursorPos > 0) {
-      final text = _controller.value.text;
-      final lastIndexOfSpace = text.lastIndexOf(RegExp(r'\s'), cursorPos - 1);
+  //   if (cursorPos > 0) {
+  //     final text = _controller.value.text;
+  //     final lastIndexOfSpace = text.lastIndexOf(RegExp(r'\s'), cursorPos - 1);
 
-      var indexOfMatch = lastIndexOfSpace + 1;
+  //     var indexOfMatch = lastIndexOfSpace + 1;
 
-      final token = text.substring(indexOfMatch).split(RegExp(r'(\s)')).first;
-      var lengthOfMatch = token.length;
+  //     final token = text.substring(indexOfMatch).split(RegExp(r'(\s)')).first;
+  //     var lengthOfMatch = token.length;
 
-      if (token.isNotEmpty) {
-        final matchers =
-            widget.matchers.where((matcher) => matcher.trigger == token[0]);
+  //     if (token.isNotEmpty) {
+  //       final matchers =
+  //           widget.matchers.where((matcher) => matcher.trigger == token[0]);
 
-        if (matchers.length > 1) {
-          throw 'Multiple matchers match $token';
-        }
+  //       if (matchers.length > 1) {
+  //         throw 'Multiple matchers match $token';
+  //       }
 
-        if (matchers.length == 1) {
-          final search = token.substring(1);
-          final matcher = matchers.first;
+  //       if (matchers.length == 1) {
+  //         final search = token.substring(1);
+  //         final matcher = matchers.first;
 
-          var matchedSuggestions = matcher.suggestions.where((e) {
-            switch (matcher.searchStyle) {
-              case MatcherSearchStyle.startsWith:
-                return matcher.displayProp(e).startsWith(search);
-              case MatcherSearchStyle.contains:
-                return matcher.displayProp(e).contains(search);
-              case MatcherSearchStyle.iStartsWith:
-                return matcher
-                    .displayProp(e)
-                    .toLowerCase()
-                    .startsWith(search.toLowerCase());
-              case MatcherSearchStyle.iContains:
-                return matcher
-                    .displayProp(e)
-                    .toLowerCase()
-                    .contains(search.toLowerCase());
-            }
-          }).toList();
+  //         var matchedSuggestions = matcher.suggestions.where((e) {
+  //           switch (matcher.searchStyle) {
+  //             case MatcherSearchStyle.startsWith:
+  //               return matcher.displayProp(e).startsWith(search);
+  //             case MatcherSearchStyle.contains:
+  //               return matcher.displayProp(e).contains(search);
+  //             case MatcherSearchStyle.iStartsWith:
+  //               return matcher
+  //                   .displayProp(e)
+  //                   .toLowerCase()
+  //                   .startsWith(search.toLowerCase());
+  //             case MatcherSearchStyle.iContains:
+  //               return matcher
+  //                   .displayProp(e)
+  //                   .toLowerCase()
+  //                   .contains(search.toLowerCase());
+  //           }
+  //         }).toList();
 
-          if (matcher.resultSort != null) {
-            matchedSuggestions
-                .sort((a, b) => matcher.resultSort!(search, a, b));
-          }
+  //         if (matcher.resultSort != null) {
+  //           matchedSuggestions
+  //               .sort((a, b) => matcher.resultSort!(search, a, b));
+  //         }
 
-          if (widget.suggestionLimit != null) {
-            matchedSuggestions =
-                matchedSuggestions.take(widget.suggestionLimit!).toList();
-          }
+  //         if (widget.suggestionLimit != null) {
+  //           matchedSuggestions =
+  //               matchedSuggestions.take(widget.suggestionLimit!).toList();
+  //         }
 
-          if (matcher.finalResultSort != null) {
-            matchedSuggestions
-                .sort((a, b) => matcher.finalResultSort!(search, a, b));
-          }
+  //         if (matcher.finalResultSort != null) {
+  //           matchedSuggestions
+  //               .sort((a, b) => matcher.finalResultSort!(search, a, b));
+  //         }
 
-          matcher.indexOfMatch = indexOfMatch;
-          matcher.lengthOfMatch = lengthOfMatch;
+  //         matcher.indexOfMatch = indexOfMatch;
+  //         matcher.lengthOfMatch = lengthOfMatch;
 
-          if (widget.suggestionMatches != null) {
-            widget.suggestionMatches!(matcher, matchedSuggestions);
-          }
+  //         if (widget.suggestionMatches != null) {
+  //           widget.suggestionMatches!(matcher, matchedSuggestions);
+  //         }
 
-          if (!widget.disableSuggestionOverlay) {
-            _showSuggestionsOverlay(
-              matcher: matcher,
-              suggestions: matchedSuggestions,
-            );
-          }
+  //         if (!widget.disableSuggestionOverlay) {
+  //           _showSuggestionsOverlay(
+  //             matcher: matcher,
+  //             suggestions: matchedSuggestions,
+  //           );
+  //         }
 
-          return;
-        }
-      }
-    }
+  //         return;
+  //       }
+  //     }
+  //   }
 
-    if (widget.suggestionMatches != null) {
-      widget.suggestionMatches!(null, []);
-    }
+  //   if (widget.suggestionMatches != null) {
+  //     widget.suggestionMatches!(null, []);
+  //   }
 
-    _hideSuggestionOverlay();
-  }
+  //   _hideSuggestionOverlay();
+  // }
 
   /// Detect the Trailing Trigger Query (for trigger having space in front)
   /// returns start index of detected query
-  int _identifyTrailingQuery(String txt, RegExp trgr,
-      {bool checkSpaceBefore = true}) {
+  int _identifyTrailingQuery(String txt, RegExp trgr) {
     var idx = txt.lastIndexOf(trgr);
-    if (!checkSpaceBefore) return idx;
     if (idx <= 0) return idx; // ie idx can be either from {0, 1}
     return txt[idx - 1].isBlank ? idx : -1; // Check for whitespace in front
   }
@@ -507,16 +525,28 @@ class FlutterParsedTextFieldState extends State<FlutterParsedTextField> {
     if (_triggerPattern.isEmpty) return;
     final cursorPos = _controller.selection.baseOffset;
 
+    //* REMEMBER :_ CursorPos = #characters behind it
     if (cursorPos > 0) {
       final text = _controller.value.text;
       //final lastIndexOfSpace = text.lastIndexOf(RegExp(r'\s'), cursorPos - 1);
 
       final textBeforeCursor = text.substring(0, cursorPos);
+      // TODO: improve below mwthod to detect the actual last idx for valid '@'
+
+      // TODO: get the matched regex & query text both
+      // TODO: Inorder to facilitate the trigger with length more than 1
+      // final indexOfMatch =
+      //     identify_trailing_query(textBeforeCursor, _triggerPattern);
+
       var indexOfMatch =
           _identifyTrailingQuery(textBeforeCursor, RegExp(_triggerPattern));
+
       //final shouldTrigger = token.startsWith(RegExp(_triggerPattern));
-      final token =
-          indexOfMatch != -1 ? text.substring(indexOfMatch, cursorPos) : '';
+      final token = indexOfMatch != -1
+          ? textBeforeCursor.substring(indexOfMatch, cursorPos)
+          : '';
+
+      //final queryTxt = MentionLogicChecker.i().doTriggerCheckAndGetQuery(textBeforeCursor, _trgrs)
 
       if (token.isNotBlank) {
         var lengthOfMatch = token.length;
@@ -530,19 +560,33 @@ class FlutterParsedTextFieldState extends State<FlutterParsedTextField> {
         if (matchers.length == 1) {
           final search = token.substring(1);
 
+          if (search.isBlank) {
+            // TODO: Decide if to display all suggestions on {trgr} character or none
+            return;
+          }
+
           // TODO: Check Trailing Space Length (thresold) to proceed ahead
-          // var presearch = token.substring(1);
-          // var trimmedSearch = presearch.trimRight();
-          // if (presearch.length - trimmedSearch.length > 2) {
-          //   return;
-          // }
+          // TODO this is wrong, you need to consoder the length of matched regex (not 1 directly)
+          // ! In the case trigger is not a character but a string then this will be ambiguous
+          var presearch = token.substring(1);
+          var trimmedSearch = presearch.trimRight();
+          if ((presearch.length - trimmedSearch.length) > 2) {
+            return;
+          }
 
           if (search.isNotBlank && (widget.onQueryDetected != null)) {
-            widget.onQueryDetected!.call(search);
+            final lastChar = search[search.length - 1];
+            // TODO: Check if need to keep this constraints of maxLength
+            if (lastChar.isNotBlank) {
+              widget.onQueryDetected!.call(search);
+            }
           }
 
           //.trim(); // trimming inorder to avoid the { space closing the suggestion box } situation
           final matcher = matchers.first;
+
+          matcher.indexOfMatch = indexOfMatch;
+          matcher.lengthOfMatch = lengthOfMatch;
 
           var matchedSuggestions = matcher.suggestions.where((e) {
             switch (matcher.searchStyle) {
@@ -578,9 +622,6 @@ class FlutterParsedTextFieldState extends State<FlutterParsedTextField> {
                 .sort((a, b) => matcher.finalResultSort!(search, a, b));
           }
 
-          matcher.indexOfMatch = indexOfMatch;
-          matcher.lengthOfMatch = lengthOfMatch;
-
           if (widget.suggestionMatches != null) {
             widget.suggestionMatches!(matcher, matchedSuggestions);
           }
@@ -603,6 +644,51 @@ class FlutterParsedTextFieldState extends State<FlutterParsedTextField> {
 
     _hideSuggestionOverlay();
   }
+
+  // void filterAndShowOverlay(Matcher matcher, String search) {
+  //   var matchedSuggestions = matcher.suggestions.where((e) {
+  //     switch (matcher.searchStyle) {
+  //       case MatcherSearchStyle.startsWith:
+  //         return matcher.displayProp(e).startsWith(search);
+  //       case MatcherSearchStyle.contains:
+  //         return matcher.displayProp(e).contains(search);
+  //       case MatcherSearchStyle.iStartsWith:
+  //         return matcher
+  //             .displayProp(e)
+  //             .toLowerCase()
+  //             .startsWith(search.toLowerCase());
+  //       case MatcherSearchStyle.iContains:
+  //         return matcher
+  //             .displayProp(e)
+  //             .toLowerCase()
+  //             .contains(search.toLowerCase());
+  //     }
+  //   }).toList();
+
+  //   if (matcher.resultSort != null) {
+  //     matchedSuggestions.sort((a, b) => matcher.resultSort!(search, a, b));
+  //   }
+
+  //   if (widget.suggestionLimit != null) {
+  //     matchedSuggestions =
+  //         matchedSuggestions.take(widget.suggestionLimit!).toList();
+  //   }
+
+  //   if (matcher.finalResultSort != null) {
+  //     matchedSuggestions.sort((a, b) => matcher.finalResultSort!(search, a, b));
+  //   }
+
+  //   if (widget.suggestionMatches != null) {
+  //     widget.suggestionMatches!(matcher, matchedSuggestions);
+  //   }
+
+  //   if (!widget.disableSuggestionOverlay) {
+  //     _showSuggestionsOverlay(
+  //       matcher: matcher,
+  //       suggestions: matchedSuggestions,
+  //     );
+  //   }
+  // }
 
   void _applySuggestionListener() {
     applySuggestion(
@@ -653,7 +739,12 @@ class FlutterParsedTextFieldState extends State<FlutterParsedTextField> {
     // To Show the Overlay
     WidgetsBinding.instance.addPostFrameCallback(
       (_) {
-        _suggestionListener2();
+        //if (!widget.isLoading && (oldWidget.isLoading != widget.isLoading)) {
+        if (oldWidget.isLoading != widget.isLoading) {
+          // API call ended or initiated
+          // TODO: Improve this action taking call (ie not always)
+          _suggestionListener2();
+        }
       },
     );
     //}
