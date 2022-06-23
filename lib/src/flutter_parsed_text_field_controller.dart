@@ -18,6 +18,7 @@ class FlutterParsedTextFieldController extends TextEditingController {
     _matchers = ms;
     // Update combined regex
     // NOTE Combined Regex will only changed when matchers/Suggestions list gets updated
+    // TODO: Decide if need to assert space before mention ie (` @Name`)
     _combinedRegex = RegExp(_matchers
         .map((m) => m.regexPattern)
         .where((e) => e.isNotEmpty)

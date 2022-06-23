@@ -15,3 +15,4 @@ part 'src/flutter_parsed_text_field.dart';
 part 'src/flutter_parsed_text_field_controller.dart';
 part 'src/matcher.model.dart';
 part 'src/suggestion_applier.model.dart';
+part 'src/mention_logic_check.dart';

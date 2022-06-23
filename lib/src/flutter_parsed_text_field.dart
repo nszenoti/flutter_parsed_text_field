@@ -29,6 +29,9 @@ class FlutterParsedTextField extends StatefulWidget {
   /// currently detected query (ie token after trigger) will be feeded to this callback
   final ValueChanged<String>? onQueryDetected;
 
+  /// Maximum character for query (constraints)
+  final int queryMaxChars;
+
   /// Height of Suggestion Box
   final double? overlayHeight;
 
@@ -192,6 +195,13 @@ class FlutterParsedTextField extends StatefulWidget {
   /// Show Indicator that Suggestions are being fetched
   final bool isLoading;
 
+  // TODO: Accomodate this if needed advanced regex for identifying display name
+  // TODO: When Some characters are only allowed in Display Name
+  // /// Pattern that holds what characters are allowed in display name
+  // /// default value :- '[a-zA-Z][a-zA-Z0-9 ]*'
+  // /// NOTE: Display name will be start with alphanumeric character
+  //final String displayNamePattern;
+
   const FlutterParsedTextField({
     Key? key,
     this.controller,
@@ -255,6 +265,8 @@ class FlutterParsedTextField extends StatefulWidget {
     this.overlayHeight,
     this.overlayWidth,
     this.isLoading = false,
+    //this.displayNamePattern = '[a-zA-Z][a-zA-Z0-9 ]*',
+    this.queryMaxChars = 12,
   }) : super(key: key);
 
   @override
@@ -268,6 +280,8 @@ class FlutterParsedTextFieldState extends State<FlutterParsedTextField> {
   OverlayEntry? _suggestionOverlay;
 
   String _triggerPattern = '';
+  // TODO: advanced regex to find last index of mention when email is also included in searched query text
+  //RegExp? _trailingMentionRegex;
 
   //bool _ignore = false;
 
@@ -298,6 +312,7 @@ class FlutterParsedTextFieldState extends State<FlutterParsedTextField> {
     }
 
     //_ignore = true;
+    // ! -> Only Listener will be Notified (not onChanged)
     _controller.value = _controller.value.copyWith(
       text: newText,
       selection: newSel,
@@ -509,20 +524,8 @@ class FlutterParsedTextFieldState extends State<FlutterParsedTextField> {
   //   _hideSuggestionOverlay();
   // }
 
-  /// Detect the Trailing Trigger Query (for trigger having space in front)
-  /// returns start index of detected query
-  int _identifyTrailingQuery(String txt, RegExp trgr) {
-    var idx = txt.lastIndexOf(trgr);
-    if (idx <= 0) return idx; // ie idx can be either from {0, 1}
-    return txt[idx - 1].isBlank ? idx : -1; // Check for whitespace in front
-  }
-
   // TODO: Do make below changes if text length changes ! (not when cursor changes)
   void _suggestionListener2() {
-    // if (_ignore) {
-    //   _ignore = false;
-
-    // }
     if (_triggerPattern.isEmpty) return;
 
     final cursorPos = _controller.selection.baseOffset;
@@ -534,21 +537,24 @@ class FlutterParsedTextFieldState extends State<FlutterParsedTextField> {
 
       final textBeforeCursor = text.substring(0, cursorPos);
       // TODO: improve below mwthod to detect the actual last idx for valid '@'
+      // TODO: Inorder to facilitate the trigger with length more than 1 (Not needed at moment)
 
-      // TODO: get the matched regex & query text both
-      // TODO: Inorder to facilitate the trigger with length more than 1
+      // TODO: Improve finding last index for valid trigger (esp when email is included in query itself)
+      //       Eg "The furious @fox gimmy@fox.com gotcha stick"
+      // find last Index of [trgr] in [txt] (with space before [trgr])
       // final indexOfMatch =
-      //     identify_trailing_query(textBeforeCursor, _triggerPattern);
+      //     _trailingMentionRegex?.firstMatch(textBeforeCursor)?.start ?? -1;
 
-      var indexOfMatch =
-          _identifyTrailingQuery(textBeforeCursor, RegExp(_triggerPattern));
+      // Detect Last Mention in [textBeforeCursor]
+      var indexOfMatch = indexOfTrailingRegexWithSpaceBefore(
+        textBeforeCursor,
+        RegExp(_triggerPattern),
+      );
 
       //final shouldTrigger = token.startsWith(RegExp(_triggerPattern));
       final token = indexOfMatch != -1
           ? textBeforeCursor.substring(indexOfMatch, cursorPos)
           : '';
-
-      //final queryTxt = MentionLogicChecker.i().doTriggerCheckAndGetQuery(textBeforeCursor, _trgrs)
 
       if (token.isNotBlank) {
         var lengthOfMatch = token.length;
@@ -562,32 +568,38 @@ class FlutterParsedTextFieldState extends State<FlutterParsedTextField> {
         if (matchers.length == 1) {
           final search = token.substring(1);
 
-          if (search.isBlank) {
-            // TODO: Decide if to display all suggestions on {trgr} character or none
+          final valid = isQueryValid(search, widget.queryMaxChars);
+
+          // if (search.isBlank) {
+          //   // TODO: Decide if to display all suggestions on {trgr} character or none
+          //   _hideSuggestionOverlay();
+          //   return;
+          // }
+
+          // // TODO: Check Trailing Space Length (thresold) to proceed ahead
+          // // TODO this is wrong, you need to consoder the length of matched regex (not 1 directly)
+          // // ! In the case trigger is not a character but a string then this will be ambiguous
+          // var trimmedSearch = search.trimRight();
+          // if ((search.length - trimmedSearch.length) > 2) {
+          //   // TODO Check this & Verify if to hide Suggestion Box or not
+          //   _hideSuggestionOverlay();
+          //   return;
+          // }
+
+          if (!valid) {
             _hideSuggestionOverlay();
             return;
           }
 
-          // TODO: Check Trailing Space Length (thresold) to proceed ahead
-          // TODO this is wrong, you need to consoder the length of matched regex (not 1 directly)
-          // ! In the case trigger is not a character but a string then this will be ambiguous
-          var presearch = token.substring(1);
-          var trimmedSearch = presearch.trimRight();
-          if ((presearch.length - trimmedSearch.length) > 2) {
-            // TODO Check this & Verify if to hide Suggestion Box or not
-            //_hideSuggestionOverlay();
-            return;
-          }
-
-          if (search.isNotBlank && (widget.onQueryDetected != null)) {
+          // TODO: Check if need to keep the constraints of maxLength for search
+          if (widget.onQueryDetected != null) {
             final lastChar = search[search.length - 1];
-            // TODO: Check if need to keep this constraints of maxLength
+
             if (lastChar.isNotBlank) {
               widget.onQueryDetected!.call(search);
             }
           }
 
-          //.trim(); // trimming inorder to avoid the { space closing the suggestion box } situation
           final matcher = matchers.first;
 
           matcher.indexOfMatch = indexOfMatch;
@@ -650,51 +662,6 @@ class FlutterParsedTextFieldState extends State<FlutterParsedTextField> {
     _hideSuggestionOverlay();
   }
 
-  // void filterAndShowOverlay(Matcher matcher, String search) {
-  //   var matchedSuggestions = matcher.suggestions.where((e) {
-  //     switch (matcher.searchStyle) {
-  //       case MatcherSearchStyle.startsWith:
-  //         return matcher.displayProp(e).startsWith(search);
-  //       case MatcherSearchStyle.contains:
-  //         return matcher.displayProp(e).contains(search);
-  //       case MatcherSearchStyle.iStartsWith:
-  //         return matcher
-  //             .displayProp(e)
-  //             .toLowerCase()
-  //             .startsWith(search.toLowerCase());
-  //       case MatcherSearchStyle.iContains:
-  //         return matcher
-  //             .displayProp(e)
-  //             .toLowerCase()
-  //             .contains(search.toLowerCase());
-  //     }
-  //   }).toList();
-
-  //   if (matcher.resultSort != null) {
-  //     matchedSuggestions.sort((a, b) => matcher.resultSort!(search, a, b));
-  //   }
-
-  //   if (widget.suggestionLimit != null) {
-  //     matchedSuggestions =
-  //         matchedSuggestions.take(widget.suggestionLimit!).toList();
-  //   }
-
-  //   if (matcher.finalResultSort != null) {
-  //     matchedSuggestions.sort((a, b) => matcher.finalResultSort!(search, a, b));
-  //   }
-
-  //   if (widget.suggestionMatches != null) {
-  //     widget.suggestionMatches!(matcher, matchedSuggestions);
-  //   }
-
-  //   if (!widget.disableSuggestionOverlay) {
-  //     _showSuggestionsOverlay(
-  //       matcher: matcher,
-  //       suggestions: matchedSuggestions,
-  //     );
-  //   }
-  // }
-
   void _applySuggestionListener() {
     applySuggestion(
       matcher: context.read<SuggestionApplier>().matcher!,
@@ -723,8 +690,10 @@ class FlutterParsedTextFieldState extends State<FlutterParsedTextField> {
 
     _controller = widget.controller ?? FlutterParsedTextFieldController();
     _triggerPattern = _pippedTriggers(widget.matchers);
+    //_trailingMentionRegex = _deriveTrailingMentionRegex(_triggerPattern);
     _controller.matchers = widget.matchers;
 
+    // TODO: UnComment below if you want to listen Cursor-Level Changes
     //_controller.addListener(_suggestionListener2);
   }
 
@@ -742,6 +711,7 @@ class FlutterParsedTextFieldState extends State<FlutterParsedTextField> {
   void didUpdateWidget(covariant FlutterParsedTextField oldWidget) {
     super.didUpdateWidget(oldWidget);
     _triggerPattern = _pippedTriggers(widget.matchers);
+    //_trailingMentionRegex = _deriveTrailingMentionRegex(_triggerPattern);
     _controller.matchers = widget.matchers;
 
     // if (isLastWordAToken(_controller.text, RegExp(_triggerPattern))) {
@@ -752,6 +722,7 @@ class FlutterParsedTextFieldState extends State<FlutterParsedTextField> {
       i.addPostFrameCallback(
         (_) {
           //if (!widget.isLoading && (oldWidget.isLoading != widget.isLoading)) {
+          // TODO: Check for ListData also here
           if (oldWidget.isLoading != widget.isLoading) {
             // API call ended or initiated
             // TODO: Improve this action taking call (ie not always)
@@ -842,6 +813,7 @@ class FlutterParsedTextFieldState extends State<FlutterParsedTextField> {
 
   @override
   void dispose() {
+    // TODO: UnComment below if you want to listen Cursor-Level Changes
     //_controller.removeListener(_suggestionListener2);
 
     super.dispose();
