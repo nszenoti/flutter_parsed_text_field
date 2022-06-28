@@ -74,12 +74,12 @@ class FlutterParsedTextFieldController extends TextEditingController {
   ///
   /// Eg "Hey @Ironman" => "Hey [[@Ironman:uid3000]]"
   String stringify() {
-    //TODO: Add check for combinedRegex
     if (_combinedRegex.pattern.isEmpty) {
       return text;
     }
 
     // TODO> Use splitApply() to optimize
+    // TODO : Wrap in try catch for Fearsome code
     return text.splitMapJoin(
       _combinedRegex,
       onMatch: (Match match) {
