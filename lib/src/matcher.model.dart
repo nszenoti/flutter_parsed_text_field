@@ -60,6 +60,7 @@ class Matcher<T> {
   /// A function to parse the stringified suggestion back into an object.
   final T Function(RegExp regex, String stringifiedSuggestion) parse;
 
+  // TODO: Test the below Generic Type change from dynamic -> T
   /// When a suggestion has been tapped and added to the text field, it will be returned.
   /// This allows you to, say, update the #hashtag list when an @mention has been added.
   final Function(String trigger, dynamic suggestion)? onSuggestionAdded;
@@ -109,8 +110,10 @@ class Matcher<T> {
     this.suggestionBuilder,
     this.alwaysHighlight = false,
     this.needToPickFirstSuggestion = false,
-  }) : assert(trigger.length == 1) {
+  }) : assert(trigger.length == 1, "trigger length must be 1") {
     var includeAll = needToPickFirstSuggestion ? false : alwaysHighlight;
+
+    // TODO: Take Set of regex before joining them
     final regexes = [
       if (includeAll) '[A-Za-z0-9]+',
       ...suggestions

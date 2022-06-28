@@ -103,7 +103,8 @@ class _MyHomePageState extends State<MyHomePage> {
               ),
             ),
             if (matcher != null && matchedSuggestions != null)
-            /// ugly UI, but it illustrates the point
+
+              /// ugly UI, but it illustrates the point
               Expanded(
                 child: Padding(
                   padding: const EdgeInsets.all(8.0),
@@ -113,7 +114,8 @@ class _MyHomePageState extends State<MyHomePage> {
                       itemCount: matchedSuggestions!.length,
                       shrinkWrap: true,
                       itemBuilder: (BuildContext context, int index) {
-                        final suggestion = matchedSuggestions![index] as Avenger;
+                        final suggestion =
+                            matchedSuggestions![index] as Avenger;
 
                         return ListTile(
                           title: Text('@${suggestion.displayName}'),
