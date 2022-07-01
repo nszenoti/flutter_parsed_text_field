@@ -714,6 +714,7 @@ class FlutterParsedTextFieldState extends State<FlutterParsedTextField> {
     //_trailingMentionRegex = _deriveTrailingMentionRegex(_triggerPattern);
     _controller.matchers = widget.matchers;
 
+    // // ATTEMPT 1 ---------------
     // // if (isLastWordAToken(_controller.text, RegExp(_triggerPattern))) {
     // // To Show the Overlay
     // final i = WidgetsBinding.instance;
@@ -732,10 +733,15 @@ class FlutterParsedTextFieldState extends State<FlutterParsedTextField> {
     //   );
     //   //}
     // }
-    if (widget.isLoading != oldWidget.isLoading) {
-      // Just trying a Hack to check if it works in 2.10
-      Future(_suggestionListener2);
-    }
+
+    // // ATTEMPT 2 ------------
+    // if (widget.isLoading != oldWidget.isLoading) {
+    //   // Just trying a Hack to check if it works in 2.10
+    //   Future(_suggestionListener2);
+    // }
+
+    // As didUpdate for loading check is not working for consecutive isLoading value changes
+    Future(_suggestionListener2).ignore();
   }
 
   @override
