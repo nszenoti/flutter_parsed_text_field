@@ -734,14 +734,14 @@ class FlutterParsedTextFieldState extends State<FlutterParsedTextField> {
     //   //}
     // }
 
-    // // ATTEMPT 2 ------------
-    // if (widget.isLoading != oldWidget.isLoading) {
-    //   // Just trying a Hack to check if it works in 2.10
-    //   Future(_suggestionListener2);
-    // }
+    // ATTEMPT 2 ------------
+    if (widget.isLoading != oldWidget.isLoading) {
+      // Hack
+      Future(_suggestionListener2);
+    }
 
     // As didUpdate for loading check is not working for consecutive isLoading value changes
-    Future(_suggestionListener2).ignore();
+    // Future(_suggestionListener2).ignore();
   }
 
   @override
