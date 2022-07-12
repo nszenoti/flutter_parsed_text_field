@@ -714,24 +714,34 @@ class FlutterParsedTextFieldState extends State<FlutterParsedTextField> {
     //_trailingMentionRegex = _deriveTrailingMentionRegex(_triggerPattern);
     _controller.matchers = widget.matchers;
 
-    // if (isLastWordAToken(_controller.text, RegExp(_triggerPattern))) {
-    // To Show the Overlay
-    final i = WidgetsBinding.instance;
-    if (i != null) {
-      // TODO: Making this check just to enusre it works for flutter 2.10 version
-      i.addPostFrameCallback(
-        (_) {
-          //if (!widget.isLoading && (oldWidget.isLoading != widget.isLoading)) {
-          // TODO: Check for ListData also here
-          if (oldWidget.isLoading != widget.isLoading) {
-            // API call ended or initiated
-            // TODO: Improve this action taking call (ie not always)
-            _suggestionListener2();
-          }
-        },
-      );
-      //}
+    // // ATTEMPT 1 ---------------
+    // // if (isLastWordAToken(_controller.text, RegExp(_triggerPattern))) {
+    // // To Show the Overlay
+    // final i = WidgetsBinding.instance;
+    // if (i != null) {
+    //   // TODO: Making this check just to enusre it works for flutter 2.10 version
+    //   i.addPostFrameCallback(
+    //     (_) {
+    //       //if (!widget.isLoading && (oldWidget.isLoading != widget.isLoading)) {
+    //       // TODO: Check for ListData also here
+    //       if (oldWidget.isLoading != widget.isLoading) {
+    //         // API call ended or initiated
+    //         // TODO: Improve this action taking call (ie not always)
+    //         _suggestionListener2();
+    //       }
+    //     },
+    //   );
+    //   //}
+    // }
+
+    // ATTEMPT 2 ------------
+    if (widget.isLoading != oldWidget.isLoading) {
+      // Hack
+      Future(_suggestionListener2);
     }
+
+    // As didUpdate for loading check is not working for consecutive isLoading value changes
+    // Future(_suggestionListener2).ignore();
   }
 
   @override
