@@ -1,7 +1,5 @@
-import 'package:example/page1.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_parsed_text_field/flutter_parsed_text_field.dart';
-import 'custom_suggestion_list.dart' as csl;
 
 void main() {
   runApp(const MyApp());
@@ -17,7 +15,7 @@ class MyApp extends StatelessWidget {
       theme: ThemeData(
         primarySwatch: Colors.blue,
       ),
-      home: Page6(title: "Flutter Parsed Text Field"),
+      home: const MyHomePage(),
     );
   }
 }

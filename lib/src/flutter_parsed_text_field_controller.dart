@@ -3,10 +3,6 @@ part of flutter_parsed_text_field;
 class FlutterParsedTextFieldController extends TextEditingController {
   /// The list of matchers that are to be recognized in this text field
   List<Matcher> _matchers = [];
-
-  // TODO : Optimize this _combinedRegex thing
-  // RegExp get _combinedRegex => RegExp(
-  //     matchers.map((m) => m.regexPattern).where((e) => e.isNotEmpty).join('|'));
   RegExp _combinedRegex = RegExp('');
 
   RegExp get _combinedParseRegex =>
@@ -18,7 +14,6 @@ class FlutterParsedTextFieldController extends TextEditingController {
     _matchers = ms;
     // Update combined regex
     // NOTE Combined Regex will only changed when matchers/Suggestions list gets updated
-    // TODO: Decide if need to assert space before mention ie (` @Name`)
     _combinedRegex = RegExp(_matchers
         .map((m) => m.regexPattern)
         .where((e) => e.isNotEmpty)
@@ -62,9 +57,7 @@ class FlutterParsedTextFieldController extends TextEditingController {
           return '${matcher.trigger}${matcher.displayProp(parsedMatch)}';
         }
 
-        // ! TODO: Check this below scenario
         return fullMatch;
-        //throw '`suggestions` is empty and `alwaysHighlight` is false.';
       },
       onNonMatch: (String text) => text,
     );
@@ -77,13 +70,9 @@ class FlutterParsedTextFieldController extends TextEditingController {
     if (_combinedRegex.pattern.isEmpty) {
       return text;
     }
-
-    // TODO> Use splitApply() to optimize
-    // TODO : Wrap in try catch for Fearsome code
     return text.splitMapJoin(
       _combinedRegex,
       onMatch: (Match match) {
-        // TODO: Wrap with try catch
         final display = match[0]!; // text which will get displayed in TextField
         final matcher = _matchers.firstWhere((m) =>
             m.regexPattern.isNotEmpty &&
@@ -94,7 +83,6 @@ class FlutterParsedTextFieldController extends TextEditingController {
             .toList();
 
         if (suggestions.isNotEmpty) {
-          // TODO: This is hindering the Same Multi-Display Name
           //assert(suggestions.length == 1);
           // ! if suggestions length is more than 1 i.e that more than 1 suggestion have same display name
           if (matcher.needToPickFirstSuggestion) {
@@ -114,7 +102,6 @@ class FlutterParsedTextFieldController extends TextEditingController {
         }
 
         return display;
-        //throw '`suggestions` is empty and `alwaysHighlight` is false.';
       },
       onNonMatch: (String text) => text,
     );
@@ -138,23 +125,7 @@ class FlutterParsedTextFieldController extends TextEditingController {
       },
     );
 
-    // Update the picked annotations set
-    //var dropped = _picked.difference(present);
-
-    //if (dropped.isNotEmpty) {
     _picked = _picked.intersection(present);
-    //}
-
-    // TODO: Add functionality for notifying Dropped Tags (ie Create Map of Tag -> Id)
-    // // var dropped = _registry.intersection(anots);
-    // if (dropped.isNotEmpty) {
-    //   for (var d in dropped) {
-    //     //_registry.removeAll(droppedOut);
-    //     var annot = _mapping[d];
-    //     var m = {'id': annot?.id, 'display': annot?.display};
-    //     onMentionDrop?.call(m);
-    //   }
-    // }
   }
 
   @override
