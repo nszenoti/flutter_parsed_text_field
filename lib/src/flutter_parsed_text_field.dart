@@ -195,13 +195,6 @@ class FlutterParsedTextField extends StatefulWidget {
   /// Show Indicator that Suggestions are being fetched
   final bool isLoading;
 
-  // TODO: Accomodate this if needed advanced regex for identifying display name
-  // TODO: When Some characters are only allowed in Display Name
-  // /// Pattern that holds what characters are allowed in display name
-  // /// default value :- '[a-zA-Z][a-zA-Z0-9 ]*'
-  // /// NOTE: Display name will be start with alphanumeric character
-  //final String displayNamePattern;
-
   const FlutterParsedTextField({
     Key? key,
     this.controller,
@@ -280,10 +273,6 @@ class FlutterParsedTextFieldState extends State<FlutterParsedTextField> {
   OverlayEntry? _suggestionOverlay;
 
   String _triggerPattern = '';
-  // TODO: advanced regex to find last index of mention when email is also included in searched query text
-  //RegExp? _trailingMentionRegex;
-
-  //bool _ignore = false;
 
   /// Apply the selected [suggestion] from the [matcher] to the text field.
   /// This will replace the partial text with the suggestion.
@@ -311,7 +300,6 @@ class FlutterParsedTextFieldState extends State<FlutterParsedTextField> {
       _controller.addPickup(tag);
     }
 
-    //_ignore = true;
     // ! -> Only Listener will be Notified (not onChanged)
     _controller.value = _controller.value.copyWith(
       text: newText,
@@ -331,7 +319,6 @@ class FlutterParsedTextFieldState extends State<FlutterParsedTextField> {
     String notifyTxt = '';
     if (suggestions.isEmpty) {
       if (widget.isLoading) {
-        // TODO: Take this notifyText to param level
         notifyTxt = 'Searching...';
       }
       // } else {
@@ -440,91 +427,6 @@ class FlutterParsedTextFieldState extends State<FlutterParsedTextField> {
     _suggestionOverlay = null;
   }
 
-  // void _suggestionListener() {
-  //   final cursorPos = _controller.selection.baseOffset;
-
-  //   if (cursorPos > 0) {
-  //     final text = _controller.value.text;
-  //     final lastIndexOfSpace = text.lastIndexOf(RegExp(r'\s'), cursorPos - 1);
-
-  //     var indexOfMatch = lastIndexOfSpace + 1;
-
-  //     final token = text.substring(indexOfMatch).split(RegExp(r'(\s)')).first;
-  //     var lengthOfMatch = token.length;
-
-  //     if (token.isNotEmpty) {
-  //       final matchers =
-  //           widget.matchers.where((matcher) => matcher.trigger == token[0]);
-
-  //       if (matchers.length > 1) {
-  //         throw 'Multiple matchers match $token';
-  //       }
-
-  //       if (matchers.length == 1) {
-  //         final search = token.substring(1);
-  //         final matcher = matchers.first;
-
-  //         var matchedSuggestions = matcher.suggestions.where((e) {
-  //           switch (matcher.searchStyle) {
-  //             case MatcherSearchStyle.startsWith:
-  //               return matcher.displayProp(e).startsWith(search);
-  //             case MatcherSearchStyle.contains:
-  //               return matcher.displayProp(e).contains(search);
-  //             case MatcherSearchStyle.iStartsWith:
-  //               return matcher
-  //                   .displayProp(e)
-  //                   .toLowerCase()
-  //                   .startsWith(search.toLowerCase());
-  //             case MatcherSearchStyle.iContains:
-  //               return matcher
-  //                   .displayProp(e)
-  //                   .toLowerCase()
-  //                   .contains(search.toLowerCase());
-  //           }
-  //         }).toList();
-
-  //         if (matcher.resultSort != null) {
-  //           matchedSuggestions
-  //               .sort((a, b) => matcher.resultSort!(search, a, b));
-  //         }
-
-  //         if (widget.suggestionLimit != null) {
-  //           matchedSuggestions =
-  //               matchedSuggestions.take(widget.suggestionLimit!).toList();
-  //         }
-
-  //         if (matcher.finalResultSort != null) {
-  //           matchedSuggestions
-  //               .sort((a, b) => matcher.finalResultSort!(search, a, b));
-  //         }
-
-  //         matcher.indexOfMatch = indexOfMatch;
-  //         matcher.lengthOfMatch = lengthOfMatch;
-
-  //         if (widget.suggestionMatches != null) {
-  //           widget.suggestionMatches!(matcher, matchedSuggestions);
-  //         }
-
-  //         if (!widget.disableSuggestionOverlay) {
-  //           _showSuggestionsOverlay(
-  //             matcher: matcher,
-  //             suggestions: matchedSuggestions,
-  //           );
-  //         }
-
-  //         return;
-  //       }
-  //     }
-  //   }
-
-  //   if (widget.suggestionMatches != null) {
-  //     widget.suggestionMatches!(null, []);
-  //   }
-
-  //   _hideSuggestionOverlay();
-  // }
-
-  // TODO: Do make below changes if text length changes ! (not when cursor changes)
   void _suggestionListener2() {
     if (_triggerPattern.isEmpty) return;
 
@@ -533,17 +435,8 @@ class FlutterParsedTextFieldState extends State<FlutterParsedTextField> {
     //* REMEMBER :_ CursorPos = #characters behind it
     if (cursorPos > 0) {
       final text = _controller.value.text;
-      //final lastIndexOfSpace = text.lastIndexOf(RegExp(r'\s'), cursorPos - 1);
 
       final textBeforeCursor = text.substring(0, cursorPos);
-      // TODO: improve below mwthod to detect the actual last idx for valid '@'
-      // TODO: Inorder to facilitate the trigger with length more than 1 (Not needed at moment)
-
-      // TODO: Improve finding last index for valid trigger (esp when email is included in query itself)
-      //       Eg "The furious @fox gimmy@fox.com gotcha stick"
-      // find last Index of [trgr] in [txt] (with space before [trgr])
-      // final indexOfMatch =
-      //     _trailingMentionRegex?.firstMatch(textBeforeCursor)?.start ?? -1;
 
       // Detect Last Mention in [textBeforeCursor]
       var indexOfMatch = indexOfTrailingRegexWithSpaceBefore(
@@ -551,7 +444,6 @@ class FlutterParsedTextFieldState extends State<FlutterParsedTextField> {
         RegExp(_triggerPattern),
       );
 
-      //final shouldTrigger = token.startsWith(RegExp(_triggerPattern));
       final token = indexOfMatch != -1
           ? textBeforeCursor.substring(indexOfMatch, cursorPos)
           : '';
@@ -567,31 +459,13 @@ class FlutterParsedTextFieldState extends State<FlutterParsedTextField> {
 
         if (matchers.length == 1) {
           final search = token.substring(1);
-
           final valid = isQueryValid(search, widget.queryMaxChars);
-
-          // if (search.isBlank) {
-          //   // TODO: Decide if to display all suggestions on {trgr} character or none
-          //   _hideSuggestionOverlay();
-          //   return;
-          // }
-
-          // // TODO: Check Trailing Space Length (thresold) to proceed ahead
-          // // TODO this is wrong, you need to consoder the length of matched regex (not 1 directly)
-          // // ! In the case trigger is not a character but a string then this will be ambiguous
-          // var trimmedSearch = search.trimRight();
-          // if ((search.length - trimmedSearch.length) > 2) {
-          //   // TODO Check this & Verify if to hide Suggestion Box or not
-          //   _hideSuggestionOverlay();
-          //   return;
-          // }
 
           if (!valid) {
             _hideSuggestionOverlay();
             return;
           }
 
-          // TODO: Check if need to keep the constraints of maxLength for search
           if (widget.onQueryDetected != null) {
             final lastChar = search[search.length - 1];
 
@@ -679,8 +553,6 @@ class FlutterParsedTextFieldState extends State<FlutterParsedTextField> {
   void _onChangedImpl(String txt) {
     widget.onChanged?.call(txt);
     _controller.updatePickedTags(); // remove tags if needed !
-
-    //* TODO: Decide if you need to show suggestion box as cursor changes or text changes
     _suggestionListener2();
   }
 
@@ -690,58 +562,22 @@ class FlutterParsedTextFieldState extends State<FlutterParsedTextField> {
 
     _controller = widget.controller ?? FlutterParsedTextFieldController();
     _triggerPattern = _pippedTriggers(widget.matchers);
-    //_trailingMentionRegex = _deriveTrailingMentionRegex(_triggerPattern);
     _controller.matchers = widget.matchers;
 
-    // TODO: UnComment below if you want to listen Cursor-Level Changes
+    // UnComment below if you want to listen Cursor-Level Changes
     //_controller.addListener(_suggestionListener2);
   }
-
-  // bool isLastWordAToken(
-  //   String text,
-  //   RegExp trigger, {
-  //   bool requireSpaceBefore = true,
-  // }) {
-  //   final lastWord = text.split(RegExp(r'\s+')).last;
-  //   if()
-  //   return ((lastWord.length > 1) && (lastWord.startsWith('@')));
-  // }
 
   @override
   void didUpdateWidget(covariant FlutterParsedTextField oldWidget) {
     super.didUpdateWidget(oldWidget);
     _triggerPattern = _pippedTriggers(widget.matchers);
-    //_trailingMentionRegex = _deriveTrailingMentionRegex(_triggerPattern);
     _controller.matchers = widget.matchers;
 
-    // // ATTEMPT 1 ---------------
-    // // if (isLastWordAToken(_controller.text, RegExp(_triggerPattern))) {
-    // // To Show the Overlay
-    // final i = WidgetsBinding.instance;
-    // if (i != null) {
-    //   // TODO: Making this check just to enusre it works for flutter 2.10 version
-    //   i.addPostFrameCallback(
-    //     (_) {
-    //       //if (!widget.isLoading && (oldWidget.isLoading != widget.isLoading)) {
-    //       // TODO: Check for ListData also here
-    //       if (oldWidget.isLoading != widget.isLoading) {
-    //         // API call ended or initiated
-    //         // TODO: Improve this action taking call (ie not always)
-    //         _suggestionListener2();
-    //       }
-    //     },
-    //   );
-    //   //}
-    // }
-
-    // ATTEMPT 2 ------------
     if (widget.isLoading != oldWidget.isLoading) {
       // Hack
       Future(_suggestionListener2);
     }
-
-    // As didUpdate for loading check is not working for consecutive isLoading value changes
-    // Future(_suggestionListener2).ignore();
   }
 
   @override
@@ -823,9 +659,8 @@ class FlutterParsedTextFieldState extends State<FlutterParsedTextField> {
 
   @override
   void dispose() {
-    // TODO: UnComment below if you want to listen Cursor-Level Changes
+    // UnComment below if you want to listen Cursor-Level Changes
     //_controller.removeListener(_suggestionListener2);
-
     super.dispose();
   }
 }

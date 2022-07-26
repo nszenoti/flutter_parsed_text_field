@@ -16,7 +16,3 @@ part 'src/flutter_parsed_text_field_controller.dart';
 part 'src/matcher.model.dart';
 part 'src/suggestion_applier.model.dart';
 part 'src/mention_logic_check.dart';
-
-//part 'src/utils.dart';
-//part 'src/mention_logic_checker_classold.dart';
-//part 'src/string_utils.dart';
