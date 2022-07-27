@@ -1,8 +1,16 @@
-A flutter package which lets you use styled @mentions and #hashtags with twitter-like suggestions
-in your TextField.
+A flutter package which lets you use styled @mentions and #hashtags or other similar mentions with suggestions in your TextField.
 
-This was very much inspired by [flutter_parsed_text](https://pub.dev/packages/flutter_parsed_text) and
-[flutter_mentions](https://pub.dev/packages/flutter_mentions), so credit to them!
+> NOTE : 
+> This package is modified version of `flutter_parsed_text_field`
+> original package ref : https://pub.dev/packages/flutter_parsed_text_field 
+
+<br>
+
+*New features added* :
+- callback for detected query ie `onQueryDetected` (inorder to act on currently detected query)
+- limit the query by characters `queryMaxChars`
+- customize the size (height, width) of an overlay
+- provision to pick first suggestion from overlay, mandatorily
 
 # Table of contents
 
@@ -18,7 +26,9 @@ Add this to your package's `pubspec.yaml` file:
 
 ```yaml
 dependencies:
-  flutter_parsed_text_field: ^0.1.0
+  flutter_parsed_text_field:
+    git:
+      url: https://github.com/nszenoti/flutter_parsed_text_field
 ```
 
 ### 2. Install it
@@ -67,10 +77,14 @@ Configurable properties:
 - `suggestionLimit` – number of suggestions to return
 - `suggestionPosition` – should the suggestion list appear above or below the text field
 - `matchers` - a list of `Matcher` which defines the triggers and suggestions
+- `queryMaxChars` - number of max characters allowed in detected query
+- `overlayHeight` - max height of an suggestion overlay box
+- `overlayWidth` - max-width of an suggestion overlay box
 
 Callbacks:
 
 - `suggestionMatches` – returns a list of the suggestions that are matched
+- `onQueryDetected` - returns the query token detected (i.e after trigger character)
 
 ### `Matcher`
 
@@ -97,13 +111,11 @@ Configurable properties:
 - `stringify` - convert the suggestion into a parsable string
 - `alwaysHighlight` - always apply style even if there isn't a matching suggestion
 - `parse` - convert the parsable string into a suggestion
+- `needToPickFirstSuggestion` - `true` if need to pick first mention compulsorily from overlay suggestion box
 
 # Custom Suggestion List
 If you dont want the built-in popup to appear, and instead display the suggestions elsewhere, you can!
 Check /example/lib/custom-suggestion-list.dart
-
-## Contributing
-Pull requests are welcome. Please open an issue first to discuss what you would like to change.
 
 ## License
 [MIT](https://choosealicense.com/licenses/mit/)
